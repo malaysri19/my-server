@@ -45,7 +45,26 @@ db.getConnection((err, connection) => {
             if (err) {
                 console.error("Error creating table:", err.message);
             }
-            connection.release();
+            
+            connection.query(`CREATE TABLE IF NOT EXISTS job_givers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                businessName VARCHAR(255) NOT NULL,
+                personRequired INT NOT NULL,
+                dutyHours VARCHAR(255) NOT NULL,
+                typeOfWork VARCHAR(255) NOT NULL,
+                state VARCHAR(100) NOT NULL,
+                cityArea VARCHAR(255) NOT NULL,
+                mobileNumber VARCHAR(50) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                businessWebsite VARCHAR(255),
+                submittedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`, (err2) => {
+                if (err2) {
+                    console.error("Error creating job_givers table:", err2.message);
+                }
+                connection.release();
+            });
         });
     }
 });
@@ -71,6 +90,26 @@ app.post('/api/submit', (req, res) => {
     });
 });
 
+// API Route to submit job giver form
+app.post('/api/submit-giver', (req, res) => {
+    const { name, businessName, personRequired, dutyHours, typeOfWork, state, cityArea, mobileNumber, email, businessWebsite } = req.body;
+
+    if (!name || !businessName || !personRequired || !dutyHours || !typeOfWork || !state || !cityArea || !mobileNumber || !email) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const sql = `INSERT INTO job_givers (name, businessName, personRequired, dutyHours, typeOfWork, state, cityArea, mobileNumber, email, businessWebsite) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [name, businessName, personRequired, dutyHours, typeOfWork, state, cityArea, mobileNumber, email, businessWebsite || null];
+
+    db.query(sql, params, function (err, result) {
+        if (err) {
+            console.error("Database error:", err.message);
+            return res.status(500).json({ error: "Failed to save submission" });
+        }
+        res.status(201).json({ message: "Submission successful", id: result.insertId });
+    });
+});
 
 
 // Start Server
